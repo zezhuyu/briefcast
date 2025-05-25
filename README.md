@@ -429,5 +429,5 @@ The API documentation is available at `API.md` when running the backend server. 
 
 ## License
 
-MIT
+GPL v3.0
 
