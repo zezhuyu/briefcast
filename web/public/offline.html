@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BriefCast - Offline</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background: linear-gradient(145deg, #4F46E5, #6422FE);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-align: center;
+    }
+    
+    .container {
+      max-width: 500px;
+      padding: 2rem;
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 90%;
+      max-width: 600px;
+    }
+    
+    h1 {
+      margin-top: 0;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      margin-bottom: 1.5rem;
+      font-size: 1.1rem;
+      opacity: 0.9;
+      line-height: 1.6;
+    }
+    
+    .button {
+      display: inline-block;
+      background-color: #F59E0B;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 0.2s;
+      margin: 0.5rem;
+      cursor: pointer;
+    }
+    
+    .button:hover {
+      background-color: #D97706;
+    }
+    
+    .icon {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 1.5rem;
+    }
+
+    .podcast-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-top: 2rem;
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .podcast-item {
+      display: flex;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      transition: all 0.2s;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .podcast-item:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .podcast-cover {
+      width: 60px;
+      height: 60px;
+      border-radius: 0.25rem;
+      object-fit: cover;
+      margin-right: 1rem;
+    }
+
+    .podcast-info {
+      flex: 1;
+    }
+
+    .podcast-title {
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+      opacity: 1;
+    }
+
+    .podcast-details {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      margin: 0;
+    }
+
+    .loading {
+      margin: 2rem 0;
+      font-style: italic;
+      opacity: 0.7;
+    }
+
+    .empty-state {
+      margin: 2rem 0;
+      opacity: 0.7;
+      font-style: italic;
+    }
+
+    .status-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 0.5rem;
+      background-color: rgba(0, 0, 0, 0.5);
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-bar .indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+
+    .status-bar .offline {
+      background-color: #EF4444;
+    }
+
+    .status-bar .online {
+      background-color: #10B981;
+    }
+
+    .center-content {
+      text-align: center;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="status-bar">
+    <div>
+      <span class="indicator offline" id="status-indicator"></span>
+      <span id="connection-status">Offline</span>
+    </div>
+    <div>
+      <span id="cached-info"></span>
+    </div>
+  </div>
+
+  <div class="container">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18.364 5.636a9 9 0 010 12.728m-3.536-3.536a3 3 0 010-5.656"></path>
+      <path d="M9.172 16.172a3 3 0 01-5.656 0M3 12c0-2.05.862-4.017 2.404-5.558A8.251 8.251 0 0112 4"></path>
+      <path d="M10.343 21.657a1 1 0 11-1.414-1.414 1 1 0 011.414 1.414zm0-18a1 1 0 11-1.414-1.414 1 1 0 011.414 1.414z"></path>
+    </svg>
+    <h1>You're Offline</h1>
+    <p id="main-message">
+      BriefCast is currently offline. You can still access your downloaded podcasts below or using the Downloads page.
+    </p>
+    <div class="center-content">
+      <button onclick="tryReconnect()" class="button">Try Reconnect</button>
+      <a href="/downloads" class="button">Go to Downloads</a>
+    </div>
+
+    <h2>Your Downloads</h2>
+    <div id="podcast-container">
+      <p class="loading">Loading your offline podcasts...</p>
+    </div>
+  </div>
+  
+  <script>
+    // Variables to hold state
+    let isOnline = navigator.onLine;
+    let podcasts = [];
+    let podcastDBPromise = null;
+
+    // Update UI based on connection status
+    function updateConnectionStatus() {
+      const indicator = document.getElementById('status-indicator');
+      const statusText = document.getElementById('connection-status');
+      
+      if (navigator.onLine) {
+        indicator.classList.remove('offline');
+        indicator.classList.add('online');
+        statusText.textContent = 'Online - Redirecting soon...';
+        
+        // If we're online, redirect to home after a short delay
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 3000);
+      } else {
+        indicator.classList.remove('online');
+        indicator.classList.add('offline');
+        statusText.textContent = 'Offline';
+      }
+    }
+
+    // Try to reconnect
+    function tryReconnect() {
+      updateConnectionStatus();
+      if (navigator.onLine) {
+        window.location.href = '/';
+      } else {
+        const message = document.getElementById('main-message');
+        message.textContent = 'Still offline. Please check your internet connection and try again.';
+      }
+    }
+
+    // Initialize IndexedDB
+    function initDB() {
+      if (podcastDBPromise) return podcastDBPromise;
+      
+      podcastDBPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open('podcastDB', 1);
+        
+        request.onerror = function(event) {
+          console.error('Error opening IndexedDB', event);
+          reject('Error opening database');
+        };
+        
+        request.onsuccess = function(event) {
+          resolve(event.target.result);
+        };
+        
+        request.onupgradeneeded = function(event) {
+          const db = event.target.result;
+          
+          // Create stores if they don't exist
+          if (!db.objectStoreNames.contains('podcasts')) {
+            db.createObjectStore('podcasts', { keyPath: 'id' });
+          }
+          
+          if (!db.objectStoreNames.contains('assets')) {
+            db.createObjectStore('assets', { keyPath: 'url' });
+          }
+        };
+      });
+      
+      return podcastDBPromise;
+    }
+
+    // Load podcasts from IndexedDB
+    async function loadOfflinePodcasts() {
+      try {
+        const db = await initDB();
+        
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(['podcasts'], 'readonly');
+          const store = transaction.objectStore('podcasts');
+          const request = store.getAll();
+          
+          request.onsuccess = function() {
+            // Filter to only include podcasts marked as saved offline
+            const savedPodcasts = request.result.filter(podcast => podcast.savedOffline);
+            resolve(savedPodcasts);
+          };
+          
+          request.onerror = function(event) {
+            console.error('Error loading podcasts', event);
+            reject('Error loading podcasts');
+          };
+        });
+      } catch (error) {
+        console.error('Error in loadOfflinePodcasts', error);
+        return [];
+      }
+    }
+
+    // Load asset from IndexedDB
+    async function loadAsset(url, type) {
+      if (!url) return null;
+      
+      try {
+        const db = await initDB();
+        
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(['assets'], 'readonly');
+          const store = transaction.objectStore('assets');
+          const request = store.get(url);
+          
+          request.onsuccess = function() {
+            const asset = request.result;
+            if (asset && asset.blob) {
+              resolve(URL.createObjectURL(asset.blob));
+            } else {
+              resolve(url); // Fall back to original URL
+            }
+          };
+          
+          request.onerror = function(event) {
+            console.error('Error loading asset', event);
+            resolve(url); // Fall back to original URL
+          };
+        });
+      } catch (error) {
+        console.error('Error in loadAsset', error);
+        return url;
+      }
+    }
+
+    // Render podcast list
+    async function renderPodcasts(podcasts) {
+      const container = document.getElementById('podcast-container');
+      
+      if (!podcasts || podcasts.length === 0) {
+        container.innerHTML = `
+          <p class="empty-state">No downloaded podcasts found. Download podcasts when online to listen offline.</p>
+        `;
+        return;
+      }
+      
+      // Update cached info
+      const cachedInfo = document.getElementById('cached-info');
+      cachedInfo.textContent = `${podcasts.length} podcast${podcasts.length === 1 ? '' : 's'} available offline`;
+      
+      let html = '<div class="podcast-list">';
+      
+      for (const podcast of podcasts) {
+        // Get blob URL for cover image
+        const coverImageUrl = await loadAsset(podcast.cover_image_url, 'image');
+        
+        html += `
+          <div class="podcast-item" onclick="playPodcast('${podcast.id}')">
+            <img src="${coverImageUrl}" alt="${podcast.title}" class="podcast-cover">
+            <div class="podcast-info">
+              <h3 class="podcast-title">${podcast.title}</h3>
+              <p class="podcast-details">${podcast.category || ''} ${podcast.subcategory ? '• ' + podcast.subcategory : ''}</p>
+            </div>
+          </div>
+        `;
+      }
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // Play podcast function
+    async function playPodcast(podcastId) {
+      // Load the podcast details
+      try {
+        const db = await initDB();
+        
+        const transaction = db.transaction(['podcasts'], 'readonly');
+        const store = transaction.objectStore('podcasts');
+        const request = store.get(podcastId);
+        
+        request.onsuccess = async function() {
+          const podcast = request.result;
+          if (podcast) {
+            // Get blob URLs for podcast assets
+            podcast.cover_image_url = await loadAsset(podcast.cover_image_url, 'image');
+            podcast.audio_url = await loadAsset(podcast.audio_url, 'audio');
+            podcast.transcript_url = await loadAsset(podcast.transcript_url, 'transcript');
+            
+            // Save to sessionStorage so the player page can access it
+            sessionStorage.setItem('currentOfflinePodcast', JSON.stringify(podcast));
+            
+            // Redirect to player page with podcast ID
+            window.location.href = `/?podcast=${podcastId}`;
+          }
+        };
+        
+        request.onerror = function(event) {
+          console.error('Error loading podcast', event);
+          alert('Error loading podcast. Please try again.');
+        };
+      } catch (error) {
+        console.error('Error playing podcast', error);
+        alert('Error playing podcast. Please try again.');
+      }
+    }
+
+    // Initialize the page
+    async function init() {
+      updateConnectionStatus();
+      
+      // Load offline podcasts
+      try {
+        podcasts = await loadOfflinePodcasts();
+        renderPodcasts(podcasts);
+      } catch (error) {
+        console.error('Error initializing offline page', error);
+        const container = document.getElementById('podcast-container');
+        container.innerHTML = `
+          <p class="empty-state">Error loading offline podcasts. Please try again later.</p>
+        `;
+      }
+      
+      // Listen for online/offline events
+      window.addEventListener('online', updateConnectionStatus);
+      window.addEventListener('offline', updateConnectionStatus);
+      
+      // Register service worker if needed
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(function(err) {
+          console.error('Service worker registration failed:', err);
+        });
+      }
+    }
+
+    // Start initialization when DOM is loaded
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html> 

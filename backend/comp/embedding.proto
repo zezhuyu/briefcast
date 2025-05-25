@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package embedding;
+
+// Request message
+message TextRequest {
+  string text = 1;
+}
+
+// Response message
+message FloatListResponse {
+  repeated float values = 1;
+}
+
+// Service definition
+service EmbedService {
+  rpc GetEmbedding (TextRequest) returns (FloatListResponse);
+}

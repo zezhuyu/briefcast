@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BriefCast - Cache Cleaner</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background: linear-gradient(145deg, #4F46E5, #6422FE);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+    }
+    
+    .container {
+      max-width: 800px;
+      width: 100%;
+      padding: 2rem;
+      margin-top: 2rem;
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    h2 {
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 0.5rem;
+    }
+    
+    p {
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    
+    .button {
+      display: inline-block;
+      background-color: #F59E0B;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 0.2s;
+      margin: 0.5rem;
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
+    }
+    
+    .button:hover {
+      background-color: #D97706;
+    }
+    
+    .status {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .success {
+      background-color: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+    }
+    
+    .error {
+      background-color: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+    }
+    
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 2rem;
+      justify-content: center;
+    }
+    
+    code {
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>BriefCast Cache Cleaner</h1>
+    
+    <div id="status" class="status">
+      This utility helps fix issues with the BriefCast app, including the "Failed to load chunk" error.
+    </div>
+    
+    <h2>Why am I seeing errors?</h2>
+    <p>
+      You may be experiencing issues because:
+    </p>
+    <ul>
+      <li>The app was recently updated and your browser has cached old versions of some files</li>
+      <li>The service worker is serving stale JavaScript chunks</li>
+      <li>There's a conflict between cached files and new app code</li>
+    </ul>
+    
+    <h2>Actions</h2>
+    <div class="actions">
+      <button id="unregister-sw" class="button">Unregister Service Worker</button>
+      <button id="clear-cache" class="button">Clear Cache Storage</button>
+      <button id="clear-app-data" class="button">Clear App Data</button>
+      <button id="reset-everything" class="button">Reset Everything</button>
+    </div>
+    
+    <h2>After Clearing Cache</h2>
+    <p>
+      Once cache is cleared:
+    </p>
+    <ol>
+      <li>Return to the <a href="/" class="button">Main App</a></li>
+      <li>Refresh the page a few times</li>
+      <li>The app should now work without the "Failed to load chunk" error</li>
+    </ol>
+    
+    <p>
+      <strong>Note:</strong> Clearing cache will not delete your downloaded podcasts, which are stored in IndexedDB.
+    </p>
+  </div>
+  
+  <script>
+    // Update status with message
+    function updateStatus(message, isError = false) {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = message;
+      statusEl.className = isError ? 'status error' : 'status success';
+    }
+    
+    // Unregister all service workers
+    async function unregisterServiceWorkers() {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          
+          if (registrations.length === 0) {
+            updateStatus('No service workers found to unregister.');
+            return;
+          }
+          
+          for (let registration of registrations) {
+            await registration.unregister();
+          }
+          
+          updateStatus(`Successfully unregistered ${registrations.length} service worker(s).`);
+        } else {
+          updateStatus('Service Workers are not supported in this browser.', true);
+        }
+      } catch (error) {
+        updateStatus(`Error unregistering service workers: ${error.message}`, true);
+      }
+    }
+    
+    // Clear all cache storage
+    async function clearCacheStorage() {
+      try {
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          
+          if (cacheNames.length === 0) {
+            updateStatus('No caches found to clear.');
+            return;
+          }
+          
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          updateStatus(`Successfully cleared ${cacheNames.length} cache(s).`);
+        } else {
+          updateStatus('Cache API is not supported in this browser.', true);
+        }
+      } catch (error) {
+        updateStatus(`Error clearing cache: ${error.message}`, true);
+      }
+    }
+    
+    // Clear specific app data from IndexedDB but preserve podcast data
+    async function clearAppData() {
+      try {
+        // We'll preserve podcast data but clear any problematic app state
+        if ('indexedDB' in window) {
+          // Open database
+          const request = indexedDB.open('podcastDB', 1);
+          
+          request.onsuccess = async function(event) {
+            const db = request.result;
+            
+            // Get all object stores except podcasts and assets
+            const storeNames = Array.from(db.objectStoreNames)
+              .filter(name => name !== 'podcasts' && name !== 'assets');
+            
+            if (storeNames.length === 0) {
+              updateStatus('No app data found to clear.');
+              return;
+            }
+            
+            // Delete problematic app state stores
+            for (const storeName of storeNames) {
+              const tx = db.transaction(storeName, 'readwrite');
+              const store = tx.objectStore(storeName);
+              await store.clear();
+            }
+            
+            updateStatus(`Successfully cleared app state while preserving your podcasts.`);
+          };
+          
+          request.onerror = function(event) {
+            updateStatus(`Error accessing IndexedDB: ${event.target.error}`, true);
+          };
+        } else {
+          updateStatus('IndexedDB is not supported in this browser.', true);
+        }
+      } catch (error) {
+        updateStatus(`Error clearing app data: ${error.message}`, true);
+      }
+    }
+    
+    // Reset everything - WARNING: This deletes all stored podcasts too
+    async function resetEverything() {
+      try {
+        // Unregister service workers
+        await unregisterServiceWorkers();
+        
+        // Clear all caches
+        await clearCacheStorage();
+        
+        // Delete all IndexedDB databases
+        if ('indexedDB' in window) {
+          const databases = await window.indexedDB.databases();
+          
+          if (databases && databases.length > 0) {
+            for (const database of databases) {
+              window.indexedDB.deleteDatabase(database.name);
+            }
+            updateStatus(`Reset complete. All app data including downloaded podcasts has been cleared.`);
+          } else {
+            updateStatus('No databases found to delete.');
+          }
+        }
+      } catch (error) {
+        updateStatus(`Error during full reset: ${error.message}`, true);
+      }
+    }
+    
+    // Add event listeners
+    document.getElementById('unregister-sw').addEventListener('click', unregisterServiceWorkers);
+    document.getElementById('clear-cache').addEventListener('click', clearCacheStorage);
+    document.getElementById('clear-app-data').addEventListener('click', clearAppData);
+    document.getElementById('reset-everything').addEventListener('click', function() {
+      if (confirm('WARNING: This will delete ALL app data including your downloaded podcasts. Continue?')) {
+        resetEverything();
+      }
+    });
+  </script>
+</body>
+</html> 

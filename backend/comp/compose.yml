@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  embedding_server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "50051:50051"
+    environment:
+      - EMBEDDING=BAAI/bge-base-en-v1.5
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: ["gpu"]
+              device_ids: ["0"]
+

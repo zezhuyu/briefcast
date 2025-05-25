@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BriefCast - Offline Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background: linear-gradient(145deg, #4F46E5, #6422FE);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+    }
+    
+    .container {
+      max-width: 800px;
+      width: 100%;
+      padding: 2rem;
+      margin-top: 2rem;
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    h2 {
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 0.5rem;
+    }
+    
+    p, li {
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    
+    code {
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+      font-family: monospace;
+    }
+    
+    .button {
+      display: inline-block;
+      background-color: #F59E0B;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 0.2s;
+      margin: 0.5rem;
+    }
+    
+    .button:hover {
+      background-color: #D97706;
+    }
+    
+    .status {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 0.5rem;
+    }
+    
+    .online {
+      background-color: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+    }
+    
+    .offline {
+      background-color: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>BriefCast Offline Functionality Test</h1>
+    
+    <div id="connection-status" class="status">
+      Checking connection status...
+    </div>
+    
+    <h2>Instructions for Testing Offline Mode</h2>
+    <ol>
+      <li>First, visit the <a href="/" class="button">Main Page</a> and <a href="/downloads" class="button">Downloads Page</a> to ensure they're cached by the service worker.</li>
+      <li>Download a podcast while online by clicking the download button on a podcast you want to save.</li>
+      <li>Once downloaded, disconnect from the internet (turn off Wi-Fi or use browser DevTools to toggle offline mode).</li>
+      <li>Reload the page - you should still be able to access the app and play your downloaded podcasts.</li>
+    </ol>
+    
+    <h2>Service Worker Status</h2>
+    <div id="sw-status">Checking service worker registration...</div>
+    
+    <h2>IndexedDB Status</h2>
+    <div id="idb-status">Checking IndexedDB...</div>
+    
+    <h2>Cached Podcasts</h2>
+    <div id="podcasts-list">Loading saved podcasts...</div>
+  </div>
+  
+  <script>
+    // Update connection status
+    function updateConnectionStatus() {
+      const statusEl = document.getElementById('connection-status');
+      if (navigator.onLine) {
+        statusEl.textContent = '✅ You are currently ONLINE';
+        statusEl.className = 'status online';
+      } else {
+        statusEl.textContent = '⚠️ You are currently OFFLINE';
+        statusEl.className = 'status offline';
+      }
+    }
+    
+    // Check service worker registration
+    async function checkServiceWorker() {
+      const statusEl = document.getElementById('sw-status');
+      
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js');
+          statusEl.innerHTML = `
+            <p>✅ Service Worker is registered!</p>
+            <p>Scope: ${registration.scope}</p>
+          `;
+          
+          // Check if controller exists (service worker is active)
+          if (navigator.serviceWorker.controller) {
+            statusEl.innerHTML += `<p>✅ Service Worker is active and controlling this page.</p>`;
+          } else {
+            statusEl.innerHTML += `<p>⚠️ Service Worker is registered but not yet controlling this page. Try refreshing.</p>`;
+          }
+        } catch (error) {
+          statusEl.innerHTML = `<p>❌ Service Worker registration failed: ${error.message}</p>`;
+        }
+      } else {
+        statusEl.textContent = '❌ Service Workers are not supported in this browser.';
+      }
+    }
+    
+    // Check IndexedDB
+    async function checkIndexedDB() {
+      const statusEl = document.getElementById('idb-status');
+      
+      if ('indexedDB' in window) {
+        try {
+          const openRequest = indexedDB.open('podcastDB', 1);
+          
+          openRequest.onsuccess = (event) => {
+            const db = openRequest.result;
+            const storeNames = Array.from(db.objectStoreNames);
+            
+            statusEl.innerHTML = `
+              <p>✅ IndexedDB is working correctly.</p>
+              <p>Database: podcastDB</p>
+              <p>Object stores: ${storeNames.join(', ')}</p>
+            `;
+            
+            // Check for podcasts
+            if (storeNames.includes('podcasts')) {
+              const transaction = db.transaction(['podcasts'], 'readonly');
+              const store = transaction.objectStore('podcasts');
+              const countRequest = store.count();
+              
+              countRequest.onsuccess = () => {
+                statusEl.innerHTML += `<p>Total podcasts stored: ${countRequest.result}</p>`;
+                
+                // Get podcasts
+                const getAll = store.getAll();
+                getAll.onsuccess = () => {
+                  loadPodcasts(getAll.result.filter(p => p.savedOffline));
+                };
+              };
+            }
+          };
+          
+          openRequest.onerror = (event) => {
+            statusEl.innerHTML = `<p>❌ Error opening IndexedDB: ${event.target.error}</p>`;
+          };
+        } catch (error) {
+          statusEl.innerHTML = `<p>❌ Error with IndexedDB: ${error.message}</p>`;
+        }
+      } else {
+        statusEl.textContent = '❌ IndexedDB is not supported in this browser.';
+      }
+    }
+    
+    // Load saved podcasts
+    function loadPodcasts(podcasts) {
+      const listEl = document.getElementById('podcasts-list');
+      
+      if (!podcasts || podcasts.length === 0) {
+        listEl.innerHTML = '<p>No podcasts have been saved for offline use yet.</p>';
+        return;
+      }
+      
+      let html = '<ul style="list-style: none; padding: 0;">';
+      
+      podcasts.forEach(podcast => {
+        html += `
+          <li style="margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 60px; height: 60px; background: #F59E0B; border-radius: 0.25rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                ${podcast.title?.charAt(0) || 'P'}
+              </div>
+              <div>
+                <h3 style="margin: 0 0 0.5rem 0;">${podcast.title || 'Untitled Podcast'}</h3>
+                <p style="margin: 0; opacity: 0.7;">${podcast.show || podcast.subcategory || 'Unknown category'}</p>
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; opacity: 0.5;">Saved on: ${new Date(podcast.savedAt).toLocaleString()}</p>
+              </div>
+            </div>
+          </li>
+        `;
+      });
+      
+      html += '</ul>';
+      listEl.innerHTML = html;
+    }
+    
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      updateConnectionStatus();
+      checkServiceWorker();
+      checkIndexedDB();
+      
+      // Add online/offline event listeners
+      window.addEventListener('online', updateConnectionStatus);
+      window.addEventListener('offline', updateConnectionStatus);
+    });
+  </script>
+</body>
+</html> 
