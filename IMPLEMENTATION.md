@@ -418,22 +418,3 @@ The system maintains multiple preference vectors for each user:
   def dim_weight(weight, replay):
       return weight * (1 / math.e ** (replay - 1))
   ```
-
-#### Recommendation Generation
-1. **Initial Filtering (PostgreSQL)**
-   - Filter trending content
-   - Apply basic user preferences
-   - Use vector similarity for initial ranking
-
-2. **Fine-grained Ranking (Milvus)**
-   - Apply semantic search
-   - Consider user preference vectors
-   - Combine with trending scores
-
-3. **Final Ranking**
-   - Weighted combination of:
-     - Semantic similarity
-     - Trending score
-     - User preference match
-     - Content freshness
-     - User interaction history
