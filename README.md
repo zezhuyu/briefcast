@@ -106,8 +106,12 @@ These requirements are necessary due to the heavy use of AI models for:
 
 This is a personalized daily briefing generated based on my preferences, including the audio narration, cover image, and synchronized lyrics. The content is automatically updated each day with the latest news and weather information.
 
+> **Note:** Since GitHub README doesn't support audio playback, you can find the sample files in the `files` folder:
+> - `files/sample.mp3` - The audio narration
+> - `files/sample.png` - The cover image
+> - `files/sample.lrc` - The synchronized lyrics file
 
-<div align="center">
+<!-- <div align="center">
   <div style="max-width: 600px; margin: 20px auto; background: #f5f5f5; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
     <div style="display: flex; gap: 20px; align-items: stretch;">
       <div style="width: 50%; display: flex; flex-direction: column;">
@@ -312,7 +316,7 @@ This is a personalized daily briefing generated based on my preferences, includi
       </div>
     </div>
   </div>
-</div>
+</div> -->
 
 ## Installation
 
